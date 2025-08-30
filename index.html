@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -293,6 +294,7 @@
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -304,6 +306,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -315,6 +318,7 @@
                 opacity: 0;
                 transform: translateY(40px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -322,35 +326,53 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
         }
 
         @media (max-width: 480px) {
             .container {
                 padding: 15px;
             }
-            
+
             .header h1 {
                 font-size: 24px;
             }
-            
+
             .controls {
                 flex-direction: column;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -458,24 +480,24 @@
             async startScanning() {
                 const startBtn = document.getElementById('startBtn');
                 const stopBtn = document.getElementById('stopBtn');
-                
+
                 try {
                     startBtn.disabled = true;
                     startBtn.innerHTML = '<span class="loading"></span> Starting...';
-                    
+
                     // Configure scanner with success callback
                     const qrCodeSuccessCallback = (decodedText, decodedResult) => {
                         console.log('QR Code detected:', decodedText);
                         this.onScanSuccess(decodedText);
                     };
-                    
+
                     const config = {
                         fps: 10,
                         qrbox: { width: 250, height: 250 },
                         aspectRatio: 1.0,
                         disableFlip: false
                     };
-                    
+
                     await this.scanner.start(
                         { facingMode: "environment" },
                         config,
@@ -484,12 +506,12 @@
                             // Silently ignore scan errors (happens when no QR code is in view)
                         }
                     );
-                    
+
                     this.isScanning = true;
                     startBtn.classList.add('hidden');
                     stopBtn.classList.remove('hidden');
                     this.showMessage('Scanner active - point at QR code', 'success');
-                    
+
                 } catch (err) {
                     console.error('Failed to start scanner:', err);
                     this.showMessage('Failed to access camera. Please check permissions.', 'error');
@@ -503,7 +525,7 @@
                     try {
                         await this.scanner.stop();
                         this.isScanning = false;
-                        
+
                         document.getElementById('startBtn').classList.remove('hidden');
                         document.getElementById('stopBtn').classList.add('hidden');
                         document.getElementById('startBtn').disabled = false;
@@ -516,22 +538,22 @@
 
             onScanSuccess(decodedText) {
                 console.log('Processing scanned code:', decodedText);
-                
+
                 // Prevent multiple scans of the same code in quick succession
-                if (this.lastScannedCode === decodedText && 
+                if (this.lastScannedCode === decodedText &&
                     Date.now() - this.lastScanTime < 2000) {
                     return;
                 }
-                
+
                 this.lastScannedCode = decodedText;
                 this.lastScanTime = Date.now();
-                
+
                 // Stop scanning first
                 this.stopScanning().then(() => {
                     // Then search for prices
                     this.searchPrices(decodedText);
                     document.getElementById('manualInput').value = decodedText;
-                    
+
                     // Haptic feedback if available
                     if (navigator.vibrate) {
                         navigator.vibrate(200);
@@ -551,13 +573,13 @@
             searchPrices(query) {
                 const resultsDiv = document.getElementById('results');
                 const marketplacesDiv = document.getElementById('marketplaces');
-                
+
                 resultsDiv.classList.remove('hidden');
                 marketplacesDiv.innerHTML = '';
-                
+
                 // Clean up the query for better search results
                 const cleanQuery = this.cleanSearchQuery(query);
-                
+
                 this.marketplaces.forEach((marketplace, index) => {
                     setTimeout(() => {
                         const marketplaceEl = document.createElement('div');
@@ -569,17 +591,17 @@
                             </h3>
                             <p>${marketplace.description}</p>
                         `;
-                        
+
                         marketplaceEl.addEventListener('click', () => {
                             window.open(marketplace.url + encodeURIComponent(cleanQuery), '_blank');
                             marketplaceEl.querySelector('.status-badge').textContent = 'Opened';
                             marketplaceEl.querySelector('.status-badge').className = 'status-badge';
                         });
-                        
+
                         marketplacesDiv.appendChild(marketplaceEl);
                     }, index * 100); // Staggered animation
                 });
-                
+
                 this.showMessage(`Searching for: "${cleanQuery}"`, 'success');
             }
 
@@ -590,20 +612,20 @@
                     .replace(/^www\./, '')
                     .replace(/[<>]/g, '')
                     .trim();
-                
+
                 // If it looks like a URL, try to extract product info
                 if (cleaned.includes('/')) {
                     const parts = cleaned.split('/');
                     cleaned = parts[parts.length - 1] || cleaned;
                 }
-                
+
                 // Decode URL encoding
                 try {
                     cleaned = decodeURIComponent(cleaned);
                 } catch (e) {
                     // If decode fails, use original
                 }
-                
+
                 return cleaned;
             }
 
@@ -611,13 +633,13 @@
                 // Remove any existing messages
                 const existingMessages = document.querySelectorAll('.error-message, .success-message');
                 existingMessages.forEach(msg => msg.remove());
-                
+
                 const messageEl = document.createElement('div');
                 messageEl.className = type === 'error' ? 'error-message' : 'success-message';
                 messageEl.textContent = message;
-                
+
                 document.querySelector('.manual-input').appendChild(messageEl);
-                
+
                 setTimeout(() => {
                     messageEl.remove();
                 }, 5000);
@@ -639,4 +661,5 @@
         }
     </script>
 </body>
+
 </html>
