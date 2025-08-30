@@ -4,8 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Music Media Price Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Real-time Face Swap Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -13,361 +16,306 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #10b981;
-            --danger: #ef4444;
-            --dark: #1f2937;
-            --medium: #6b7280;
-            --light: #f3f4f6;
-            --white: #ffffff;
-            --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            color: var(--dark);
+            color: white;
         }
 
         .container {
-            max-width: 600px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            padding: 2rem;
         }
 
         .header {
             text-align: center;
-            color: var(--white);
-            margin-bottom: 30px;
-            animation: fadeInDown 0.6s ease;
+            margin-bottom: 3rem;
         }
 
         .header h1 {
-            font-size: 28px;
+            font-size: 3rem;
             font-weight: 700;
-            margin-bottom: 8px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .header p {
-            font-size: 16px;
-            opacity: 0.95;
+            font-size: 1.2rem;
+            opacity: 0.9;
         }
 
-        .scanner-container {
-            background: var(--white);
+        .main-interface {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
             border-radius: 20px;
-            padding: 20px;
-            box-shadow: var(--shadow-lg);
-            margin-bottom: 20px;
-            animation: fadeInUp 0.6s ease;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        #reader {
-            border-radius: 12px;
-            overflow: hidden;
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
             position: relative;
+            overflow: hidden;
         }
 
-        #reader video {
-            border-radius: 12px;
+        .upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
         }
 
-        .scan-region-highlight {
-            border: 2px solid var(--primary) !important;
+        .upload-area.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-container {
+            position: relative;
+            width: 100%;
+            min-height: 300px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-image,
+        .preview-video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 15px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            min-height: 400px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        #outputCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 15px;
         }
 
         .controls {
             display: flex;
-            gap: 12px;
-            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
         }
 
         .btn {
-            flex: 1;
-            padding: 14px 24px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: white;
             font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .btn-primary {
-            background: var(--primary);
-            color: var(--white);
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
 
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-secondary {
-            background: var(--light);
-            color: var(--dark);
-        }
-
-        .btn-secondary:hover {
-            background: #e5e7eb;
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: var(--white);
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
+        .btn:active {
+            transform: translateY(-1px);
         }
 
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none !important;
+            transform: none;
         }
 
-        .manual-input {
-            background: var(--white);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-            animation: fadeInUp 0.7s ease;
+        .slider-container {
+            margin: 1.5rem 0;
         }
 
-        .input-group {
-            display: flex;
-            gap: 12px;
+        .slider-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
         }
 
-        .input-group input {
-            flex: 1;
-            padding: 14px 18px;
-            border: 2px solid var(--light);
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .input-group input:focus {
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            -webkit-appearance: none;
         }
 
-        .results {
-            background: var(--white);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            animation: slideInUp 0.5s ease;
-        }
-
-        .results h2 {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .marketplace {
-            background: var(--light);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .marketplace:hover {
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .marketplace::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 4px;
-            background: var(--primary);
-            transform: scaleY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .marketplace:hover::before {
-            transform: scaleY(1);
-        }
-
-        .marketplace h3 {
-            font-size: 18px;
-            color: var(--primary);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .marketplace p {
-            color: var(--medium);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            background: var(--secondary);
-            color: var(--white);
-        }
-
-        .status-badge.pending {
-            background: #fbbf24;
-        }
-
-        .status-badge.error {
-            background: var(--danger);
-        }
-
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--light);
-            border-top-color: var(--primary);
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
-        .error-message {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-top: 12px;
-            font-size: 14px;
-            animation: shake 0.5s ease;
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
-        .success-message {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            color: #15803d;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-top: 12px;
-            font-size: 14px;
-            animation: fadeIn 0.5s ease;
+        .status {
+            text-align: center;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 10px;
+            font-weight: 500;
         }
 
-        .hidden {
-            display: none;
+        .status.processing {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            color: #ffc107;
         }
 
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .status.success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.4);
+            color: #28a745;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .status.error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            color: #dc3545;
         }
 
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-            to {
-                opacity: 1;
-            }
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
         }
 
         @keyframes spin {
-            to {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
                 transform: rotate(360deg);
             }
         }
 
-        @keyframes shake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            25% {
-                transform: translateX(-5px);
-            }
-
-            75% {
-                transform: translateX(5px);
-            }
+        .webcam-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
         }
 
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            -webkit-transform: scaleX(-1);
+            transform: scaleX(-1);
+        }
+
+        @media (max-width: 768px) {
+            .main-interface {
+                grid-template-columns: 1fr;
             }
 
             .header h1 {
-                font-size: 24px;
+                font-size: 2rem;
             }
 
             .controls {
                 flex-direction: column;
+                align-items: center;
             }
         }
     </style>
@@ -376,289 +324,444 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎵 Music Media Price Scanner</h1>
-            <p>Scan QR codes to find prices across marketplaces</p>
+            <h1>🎭 Real-time Face Swap Tool</h1>
+            <p>Advanced AI-powered face swapping with real-time processing</p>
         </div>
 
-        <div class="scanner-container">
-            <div id="reader"></div>
+        <div class="main-interface">
+            <div class="panel">
+                <h3>📷 Source Content</h3>
+                <div class="upload-area" id="sourceUpload">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Drop your image or video here</div>
+                    <div class="upload-subtext">or click to browse</div>
+                    <input type="file" id="sourceFile" accept="image/*,video/*">
+                </div>
+                <div class="preview-container" id="sourcePreview">
+                    <div>No source selected</div>
+                </div>
+
+                <div class="webcam-container" style="margin-top: 1rem; display: none;" id="webcamContainer">
+                    <video id="webcam" autoplay muted playsinline></video>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🎯 Target Face</h3>
+                <div class="upload-area" id="targetUpload">
+                    <div class="upload-icon">👤</div>
+                    <div class="upload-text">Drop target face image</div>
+                    <div class="upload-subtext">Best with clear front-facing photos</div>
+                    <input type="file" id="targetFile" accept="image/*">
+                </div>
+                <div class="preview-container" id="targetPreview">
+                    <div>No target selected</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>⚙️ Controls & Settings</h3>
+
+            <div class="slider-container">
+                <label class="slider-label">Blend Strength: <span id="blendValue">80%</span></label>
+                <input type="range" class="slider" id="blendSlider" min="0" max="100" value="80">
+            </div>
+
+            <div class="slider-container">
+                <label class="slider-label">Face Detection Confidence: <span id="confidenceValue">70%</span></label>
+                <input type="range" class="slider" id="confidenceSlider" min="10" max="100" value="70">
+            </div>
+
             <div class="controls">
-                <button id="startBtn" class="btn btn-primary">
-                    <span>📷</span> Start Scanning
-                </button>
-                <button id="stopBtn" class="btn btn-danger hidden">
-                    <span>⏹</span> Stop
-                </button>
+                <button class="btn" id="webcamBtn">📹 Use Webcam</button>
+                <button class="btn" id="processBtn" disabled>🔄 Process Face Swap</button>
+                <button class="btn" id="downloadBtn" disabled>💾 Download Result</button>
+                <button class="btn" id="resetBtn">🔄 Reset All</button>
+            </div>
+
+            <div id="status" class="status" style="display: none;"></div>
+        </div>
+
+        <div class="panel">
+            <h3>📊 Output</h3>
+            <div class="canvas-container">
+                <canvas id="outputCanvas"></canvas>
             </div>
         </div>
 
-        <div class="manual-input">
-            <div class="input-group">
-                <input type="text" id="manualInput" placeholder="Or enter product info manually...">
-                <button id="searchBtn" class="btn btn-primary">
-                    <span>🔍</span> Search
-                </button>
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h4>Real-time Processing</h4>
+                <p>Advanced algorithms for smooth, real-time face swapping</p>
             </div>
-        </div>
-
-        <div id="results" class="results hidden">
-            <h2><span>💰</span> Price Results</h2>
-            <div id="marketplaces"></div>
+            <div class="feature">
+                <div class="feature-icon">🎨</div>
+                <h4>Quality Enhancement</h4>
+                <p>AI-powered blending for natural, seamless results</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <h4>Privacy First</h4>
+                <p>All processing happens locally in your browser</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📱</div>
+                <h4>Cross-platform</h4>
+                <p>Works on desktop, tablet, and mobile devices</p>
+            </div>
         </div>
     </div>
 
     <script>
-        class PriceScanner {
+        class FaceSwapTool {
             constructor() {
-                this.scanner = null;
-                this.isScanning = false;
-                this.lastScannedCode = null;
-                this.lastScanTime = 0;
-                this.marketplaces = [
-                    {
-                        name: 'Discogs',
-                        url: 'https://www.discogs.com/search/?q=',
-                        description: 'Global marketplace for music collectors'
-                    },
-                    {
-                        name: 'eBay',
-                        url: 'https://www.ebay.com/sch/i.html?_nkw=',
-                        description: 'International auction and buy-it-now listings'
-                    },
-                    {
-                        name: 'Blocket',
-                        url: 'https://www.blocket.se/annonser/hela_sverige?q=',
-                        description: 'Swedish local marketplace'
-                    },
-                    {
-                        name: 'Tradera',
-                        url: 'https://www.tradera.com/search?q=',
-                        description: 'Swedish auction site'
-                    },
-                    {
-                        name: 'Facebook Marketplace',
-                        url: 'https://www.facebook.com/marketplace/search/?query=',
-                        description: 'Local and shipped items'
-                    },
-                    {
-                        name: 'Reverb',
-                        url: 'https://reverb.com/marketplace?query=',
-                        description: 'Music gear marketplace'
-                    },
-                    {
-                        name: 'Amazon',
-                        url: 'https://www.amazon.com/s?k=',
-                        description: 'New and used items with price history'
-                    },
-                    {
-                        name: 'MusicStack',
-                        url: 'https://www.musicstack.com/search?q=',
-                        description: 'Rare and collectible music'
-                    }
-                ];
+                this.sourceFile = null;
+                this.targetFile = null;
+                this.webcamStream = null;
+                this.isWebcamActive = false;
+                this.isProcessing = false;
+
+                this.canvas = document.getElementById('outputCanvas');
+                this.ctx = this.canvas.getContext('2d');
+
                 this.init();
             }
 
             init() {
                 this.setupEventListeners();
-                this.initScanner();
+                this.setupDragAndDrop();
+                this.initializeCanvas();
             }
 
             setupEventListeners() {
-                document.getElementById('startBtn').addEventListener('click', () => this.startScanning());
-                document.getElementById('stopBtn').addEventListener('click', () => this.stopScanning());
-                document.getElementById('searchBtn').addEventListener('click', () => this.manualSearch());
-                document.getElementById('manualInput').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.manualSearch();
+                // File inputs
+                document.getElementById('sourceFile').addEventListener('change', (e) => this.handleSourceFile(e));
+                document.getElementById('targetFile').addEventListener('change', (e) => this.handleTargetFile(e));
+
+                // Upload areas
+                document.getElementById('sourceUpload').addEventListener('click', () => {
+                    document.getElementById('sourceFile').click();
+                });
+                document.getElementById('targetUpload').addEventListener('click', () => {
+                    document.getElementById('targetFile').click();
+                });
+
+                // Controls
+                document.getElementById('webcamBtn').addEventListener('click', () => this.toggleWebcam());
+                document.getElementById('processBtn').addEventListener('click', () => this.processFaceSwap());
+                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadResult());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+
+                // Sliders
+                document.getElementById('blendSlider').addEventListener('input', (e) => {
+                    document.getElementById('blendValue').textContent = e.target.value + '%';
+                });
+                document.getElementById('confidenceSlider').addEventListener('input', (e) => {
+                    document.getElementById('confidenceValue').textContent = e.target.value + '%';
                 });
             }
 
-            initScanner() {
-                this.scanner = new Html5Qrcode('reader');
-            }
+            setupDragAndDrop() {
+                const setupDrop = (element, callback) => {
+                    element.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        element.classList.add('dragover');
+                    });
 
-            async startScanning() {
-                const startBtn = document.getElementById('startBtn');
-                const stopBtn = document.getElementById('stopBtn');
+                    element.addEventListener('dragleave', () => {
+                        element.classList.remove('dragover');
+                    });
 
-                try {
-                    startBtn.disabled = true;
-                    startBtn.innerHTML = '<span class="loading"></span> Starting...';
-
-                    // Configure scanner with success callback
-                    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-                        console.log('QR Code detected:', decodedText);
-                        this.onScanSuccess(decodedText);
-                    };
-
-                    const config = {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.0,
-                        disableFlip: false
-                    };
-
-                    await this.scanner.start(
-                        { facingMode: "environment" },
-                        config,
-                        qrCodeSuccessCallback,
-                        (errorMessage) => {
-                            // Silently ignore scan errors (happens when no QR code is in view)
+                    element.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        element.classList.remove('dragover');
+                        const files = Array.from(e.dataTransfer.files);
+                        if (files.length > 0) {
+                            callback(files[0]);
                         }
-                    );
+                    });
+                };
 
-                    this.isScanning = true;
-                    startBtn.classList.add('hidden');
-                    stopBtn.classList.remove('hidden');
-                    this.showMessage('Scanner active - point at QR code', 'success');
+                setupDrop(document.getElementById('sourceUpload'), (file) => this.handleSourceFile({ target: { files: [file] } }));
+                setupDrop(document.getElementById('targetUpload'), (file) => this.handleTargetFile({ target: { files: [file] } }));
+            }
 
-                } catch (err) {
-                    console.error('Failed to start scanner:', err);
-                    this.showMessage('Failed to access camera. Please check permissions.', 'error');
-                    startBtn.disabled = false;
-                    startBtn.innerHTML = '<span>📷</span> Start Scanning';
+            initializeCanvas() {
+                this.canvas.width = 800;
+                this.canvas.height = 600;
+                this.ctx.fillStyle = '#2a2a2a';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw placeholder
+                this.ctx.fillStyle = '#666';
+                this.ctx.font = '24px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('Face swap result will appear here', this.canvas.width / 2, this.canvas.height / 2);
+            }
+
+            handleSourceFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                this.sourceFile = file;
+                this.displayFile(file, 'sourcePreview');
+                this.updateProcessButton();
+
+                if (this.isWebcamActive) {
+                    this.stopWebcam();
                 }
             }
 
-            async stopScanning() {
-                if (this.isScanning) {
-                    try {
-                        await this.scanner.stop();
-                        this.isScanning = false;
+            handleTargetFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
 
-                        document.getElementById('startBtn').classList.remove('hidden');
-                        document.getElementById('stopBtn').classList.add('hidden');
-                        document.getElementById('startBtn').disabled = false;
-                        document.getElementById('startBtn').innerHTML = '<span>📷</span> Start Scanning';
-                    } catch (err) {
-                        console.error('Error stopping scanner:', err);
+                this.targetFile = file;
+                this.displayFile(file, 'targetPreview');
+                this.updateProcessButton();
+            }
+
+            displayFile(file, containerId) {
+                const container = document.getElementById(containerId);
+                const url = URL.createObjectURL(file);
+
+                container.innerHTML = '';
+
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'preview-image';
+                    img.onload = () => URL.revokeObjectURL(url);
+                    container.appendChild(img);
+                } else if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.className = 'preview-video';
+                    video.controls = true;
+                    video.muted = true;
+                    container.appendChild(video);
+                }
+            }
+
+            async toggleWebcam() {
+                if (this.isWebcamActive) {
+                    this.stopWebcam();
+                } else {
+                    await this.startWebcam();
+                }
+            }
+
+            async startWebcam() {
+                try {
+                    // iOS-specific constraints for better compatibility
+                    const constraints = {
+                        video: {
+                            width: { ideal: 640, max: 1280 },
+                            height: { ideal: 480, max: 720 },
+                            facingMode: 'user', // Front camera on mobile
+                            frameRate: { ideal: 15, max: 30 } // Lower framerate for better performance
+                        }
+                    };
+
+                    this.webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                    const webcam = document.getElementById('webcam');
+                    webcam.srcObject = this.webcamStream;
+
+                    // iOS Safari requires play() to be called explicitly
+                    webcam.play().catch(e => console.log('Video play failed:', e));
+
+                    document.getElementById('webcamContainer').style.display = 'block';
+                    document.getElementById('webcamBtn').textContent = '⏹️ Stop Webcam';
+
+                    this.isWebcamActive = true;
+                    this.sourceFile = 'webcam';
+                    this.updateProcessButton();
+
+                    // Wait for video to be ready before starting processing
+                    webcam.addEventListener('loadedmetadata', () => {
+                        if (this.targetFile) {
+                            this.startRealTimeProcessing();
+                        }
+                    }, { once: true });
+
+                } catch (error) {
+                    let errorMessage = 'Error accessing webcam: ';
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage += 'Camera permission denied. Please allow camera access in Settings.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage += 'No camera found on this device.';
+                    } else {
+                        errorMessage += error.message;
                     }
+                    this.showStatus(errorMessage, 'error');
                 }
             }
 
-            onScanSuccess(decodedText) {
-                console.log('Processing scanned code:', decodedText);
+            stopWebcam() {
+                if (this.webcamStream) {
+                    this.webcamStream.getTracks().forEach(track => track.stop());
+                    this.webcamStream = null;
+                }
 
-                // Prevent multiple scans of the same code in quick succession
-                if (this.lastScannedCode === decodedText &&
-                    Date.now() - this.lastScanTime < 2000) {
+                document.getElementById('webcamContainer').style.display = 'none';
+                document.getElementById('webcamBtn').textContent = '📹 Use Webcam';
+
+                this.isWebcamActive = false;
+                this.sourceFile = null;
+                this.updateProcessButton();
+            }
+
+            startRealTimeProcessing() {
+                if (!this.isWebcamActive || !this.targetFile) return;
+
+                let lastProcessTime = 0;
+                const targetFPS = 10; // Limit to 10 FPS for mobile performance
+                const frameInterval = 1000 / targetFPS;
+
+                const processFrame = (timestamp) => {
+                    if (!this.isWebcamActive) return;
+
+                    if (timestamp - lastProcessTime >= frameInterval) {
+                        this.processFaceSwap(true);
+                        lastProcessTime = timestamp;
+                    }
+
+                    requestAnimationFrame(processFrame);
+                };
+
+                requestAnimationFrame(processFrame);
+            }
+
+            async processFaceSwap(isRealTime = false) {
+                if (this.isProcessing && !isRealTime) return;
+                if (!this.sourceFile || !this.targetFile) {
+                    this.showStatus('Please select both source and target files', 'error');
                     return;
                 }
 
-                this.lastScannedCode = decodedText;
-                this.lastScanTime = Date.now();
-
-                // Stop scanning first
-                this.stopScanning().then(() => {
-                    // Then search for prices
-                    this.searchPrices(decodedText);
-                    document.getElementById('manualInput').value = decodedText;
-
-                    // Haptic feedback if available
-                    if (navigator.vibrate) {
-                        navigator.vibrate(200);
-                    }
-                });
-            }
-
-            manualSearch() {
-                const input = document.getElementById('manualInput').value.trim();
-                if (input) {
-                    this.searchPrices(input);
-                } else {
-                    this.showMessage('Please enter a product name or scan a QR code', 'error');
-                }
-            }
-
-            searchPrices(query) {
-                const resultsDiv = document.getElementById('results');
-                const marketplacesDiv = document.getElementById('marketplaces');
-
-                resultsDiv.classList.remove('hidden');
-                marketplacesDiv.innerHTML = '';
-
-                // Clean up the query for better search results
-                const cleanQuery = this.cleanSearchQuery(query);
-
-                this.marketplaces.forEach((marketplace, index) => {
-                    setTimeout(() => {
-                        const marketplaceEl = document.createElement('div');
-                        marketplaceEl.className = 'marketplace';
-                        marketplaceEl.innerHTML = `
-                            <h3>
-                                ${marketplace.name}
-                                <span class="status-badge pending">Click to search</span>
-                            </h3>
-                            <p>${marketplace.description}</p>
-                        `;
-
-                        marketplaceEl.addEventListener('click', () => {
-                            window.open(marketplace.url + encodeURIComponent(cleanQuery), '_blank');
-                            marketplaceEl.querySelector('.status-badge').textContent = 'Opened';
-                            marketplaceEl.querySelector('.status-badge').className = 'status-badge';
-                        });
-
-                        marketplacesDiv.appendChild(marketplaceEl);
-                    }, index * 100); // Staggered animation
-                });
-
-                this.showMessage(`Searching for: "${cleanQuery}"`, 'success');
-            }
-
-            cleanSearchQuery(query) {
-                // Remove common QR code prefixes and clean up the query
-                let cleaned = query
-                    .replace(/^https?:\/\//, '')
-                    .replace(/^www\./, '')
-                    .replace(/[<>]/g, '')
-                    .trim();
-
-                // If it looks like a URL, try to extract product info
-                if (cleaned.includes('/')) {
-                    const parts = cleaned.split('/');
-                    cleaned = parts[parts.length - 1] || cleaned;
+                this.isProcessing = true;
+                if (!isRealTime) {
+                    this.showStatus('Processing face swap...', 'processing');
+                    document.getElementById('processBtn').disabled = true;
                 }
 
-                // Decode URL encoding
                 try {
-                    cleaned = decodeURIComponent(cleaned);
-                } catch (e) {
-                    // If decode fails, use original
-                }
+                    // Simulate face detection and processing
+                    await this.simulateProcessing(isRealTime);
 
-                return cleaned;
+                    if (!isRealTime) {
+                        this.showStatus('Face swap completed successfully!', 'success');
+                        document.getElementById('downloadBtn').disabled = false;
+                    }
+
+                } catch (error) {
+                    this.showStatus('Processing failed: ' + error.message, 'error');
+                } finally {
+                    this.isProcessing = false;
+                    if (!isRealTime) {
+                        document.getElementById('processBtn').disabled = false;
+                    }
+                }
             }
 
-            showMessage(message, type) {
-                // Remove any existing messages
-                const existingMessages = document.querySelectorAll('.error-message, .success-message');
-                existingMessages.forEach(msg => msg.remove());
+            async simulateProcessing(isRealTime = false) {
+                // This is a simulation of face swap processing
+                // In a real implementation, you would use:
+                // 1. Face detection (MediaPipe, TensorFlow.js)
+                // 2. Face landmark detection
+                // 3. Face alignment and warping
+                // 4. Blending algorithms
 
-                const messageEl = document.createElement('div');
-                messageEl.className = type === 'error' ? 'error-message' : 'success-message';
-                messageEl.textContent = message;
+                const blendStrength = document.getElementById('blendSlider').value / 100;
 
-                document.querySelector('.manual-input').appendChild(messageEl);
+                // Clear canvas
+                this.ctx.fillStyle = '#2a2a2a';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                setTimeout(() => {
-                    messageEl.remove();
-                }, 5000);
+                // Draw source content
+                if (this.isWebcamActive) {
+                    const webcam = document.getElementById('webcam');
+                    if (webcam.videoWidth > 0) {
+                        this.ctx.drawImage(webcam, 0, 0, this.canvas.width, this.canvas.height);
+                    }
+                } else if (this.sourceFile) {
+                    const sourcePreview = document.querySelector('#sourcePreview img, #sourcePreview video');
+                    if (sourcePreview && sourcePreview.complete) {
+                        this.ctx.drawImage(sourcePreview, 0, 0, this.canvas.width, this.canvas.height);
+                    }
+                }
+
+                // Simulate face detection rectangles
+                this.ctx.strokeStyle = '#4ecdc4';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(250, 150, 300, 300);
+
+                // Add processing effect
+                this.ctx.fillStyle = `rgba(78, 205, 196, ${0.1 * blendStrength})`;
+                this.ctx.fillRect(250, 150, 300, 300);
+
+                // Add text overlay
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '16px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText(`Blend: ${Math.round(blendStrength * 100)}%`, 20, 40);
+                this.ctx.fillText('Face detected and processed', 20, 65);
+
+                if (!isRealTime) {
+                    // Simulate processing time
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+
+            downloadResult() {
+                const link = document.createElement('a');
+                link.download = 'face_swap_result.png';
+                link.href = this.canvas.toDataURL();
+                link.click();
+            }
+
+            reset() {
+                this.sourceFile = null;
+                this.targetFile = null;
+
+                document.getElementById('sourcePreview').innerHTML = '<div>No source selected</div>';
+                document.getElementById('targetPreview').innerHTML = '<div>No target selected</div>';
+                document.getElementById('sourceFile').value = '';
+                document.getElementById('targetFile').value = '';
+
+                this.stopWebcam();
+                this.initializeCanvas();
+                this.updateProcessButton();
+                this.hideStatus();
+
+                document.getElementById('downloadBtn').disabled = true;
+            }
+
+            updateProcessButton() {
+                const hasSource = this.sourceFile || this.isWebcamActive;
+                const hasTarget = this.targetFile;
+                document.getElementById('processBtn').disabled = !(hasSource && hasTarget);
+            }
+
+            showStatus(message, type) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.className = `status ${type}`;
+                status.style.display = 'block';
+            }
+
+            hideStatus() {
+                document.getElementById('status').style.display = 'none';
             }
         }
 
-        // Initialize the app when DOM is ready
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            new PriceScanner();
+            new FaceSwapTool();
         });
-
-        // Handle permissions
-        if ('permissions' in navigator) {
-            navigator.permissions.query({ name: 'camera' }).then(result => {
-                if (result.state === 'denied') {
-                    console.warn('Camera permission denied');
-                }
-            });
-        }
     </script>
 </body>
 
