@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Music Media Price Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --medium: #6b7280;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            color: var(--white);
+            margin-bottom: 30px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+
+        .scanner-container {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 20px;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        #reader {
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #reader video {
+            border-radius: 12px;
+        }
+
+        .scan-region-highlight {
+            border: 2px solid var(--primary) !important;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .manual-input {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            animation: fadeInUp 0.7s ease;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid var(--light);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .results {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            animation: slideInUp 0.5s ease;
+        }
+
+        .results h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .marketplace {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .marketplace:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .marketplace::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--primary);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .marketplace:hover::before {
+            transform: scaleY(1);
+        }
+
+        .marketplace h3 {
+            font-size: 18px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .marketplace p {
+            color: var(--medium);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--secondary);
+            color: var(--white);
+        }
+
+        .status-badge.pending {
+            background: #fbbf24;
+        }
+
+        .status-badge.error {
+            background: var(--danger);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-top: 12px;
+            font-size: 14px;
+            animation: shake 0.5s ease;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-top: 12px;
+            font-size: 14px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Music Media Price Scanner</h1>
+            <p>Scan QR codes to find prices across marketplaces</p>
+        </div>
+
+        <div class="scanner-container">
+            <div id="reader"></div>
+            <div class="controls">
+                <button id="startBtn" class="btn btn-primary">
+                    <span>📷</span> Start Scanning
+                </button>
+                <button id="stopBtn" class="btn btn-danger hidden">
+                    <span>⏹</span> Stop
+                </button>
+            </div>
+        </div>
+
+        <div class="manual-input">
+            <div class="input-group">
+                <input type="text" id="manualInput" placeholder="Or enter product info manually...">
+                <button id="searchBtn" class="btn btn-primary">
+                    <span>🔍</span> Search
+                </button>
+            </div>
+        </div>
+
+        <div id="results" class="results hidden">
+            <h2><span>💰</span> Price Results</h2>
+            <div id="marketplaces"></div>
+        </div>
+    </div>
+
+    <script>
+        class PriceScanner {
+            constructor() {
+                this.scanner = null;
+                this.isScanning = false;
+                this.lastScannedCode = null;
+                this.lastScanTime = 0;
+                this.marketplaces = [
+                    {
+                        name: 'Discogs',
+                        url: 'https://www.discogs.com/search/?q=',
+                        description: 'Global marketplace for music collectors'
+                    },
+                    {
+                        name: 'eBay',
+                        url: 'https://www.ebay.com/sch/i.html?_nkw=',
+                        description: 'International auction and buy-it-now listings'
+                    },
+                    {
+                        name: 'Blocket',
+                        url: 'https://www.blocket.se/annonser/hela_sverige?q=',
+                        description: 'Swedish local marketplace'
+                    },
+                    {
+                        name: 'Tradera',
+                        url: 'https://www.tradera.com/search?q=',
+                        description: 'Swedish auction site'
+                    },
+                    {
+                        name: 'Facebook Marketplace',
+                        url: 'https://www.facebook.com/marketplace/search/?query=',
+                        description: 'Local and shipped items'
+                    },
+                    {
+                        name: 'Reverb',
+                        url: 'https://reverb.com/marketplace?query=',
+                        description: 'Music gear marketplace'
+                    },
+                    {
+                        name: 'Amazon',
+                        url: 'https://www.amazon.com/s?k=',
+                        description: 'New and used items with price history'
+                    },
+                    {
+                        name: 'MusicStack',
+                        url: 'https://www.musicstack.com/search?q=',
+                        description: 'Rare and collectible music'
+                    }
+                ];
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.initScanner();
+            }
+
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startScanning());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stopScanning());
+                document.getElementById('searchBtn').addEventListener('click', () => this.manualSearch());
+                document.getElementById('manualInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.manualSearch();
+                });
+            }
+
+            initScanner() {
+                this.scanner = new Html5Qrcode('reader');
+            }
+
+            async startScanning() {
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                
+                try {
+                    startBtn.disabled = true;
+                    startBtn.innerHTML = '<span class="loading"></span> Starting...';
+                    
+                    // Configure scanner with success callback
+                    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                        console.log('QR Code detected:', decodedText);
+                        this.onScanSuccess(decodedText);
+                    };
+                    
+                    const config = {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0,
+                        disableFlip: false
+                    };
+                    
+                    await this.scanner.start(
+                        { facingMode: "environment" },
+                        config,
+                        qrCodeSuccessCallback,
+                        (errorMessage) => {
+                            // Silently ignore scan errors (happens when no QR code is in view)
+                        }
+                    );
+                    
+                    this.isScanning = true;
+                    startBtn.classList.add('hidden');
+                    stopBtn.classList.remove('hidden');
+                    this.showMessage('Scanner active - point at QR code', 'success');
+                    
+                } catch (err) {
+                    console.error('Failed to start scanner:', err);
+                    this.showMessage('Failed to access camera. Please check permissions.', 'error');
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = '<span>📷</span> Start Scanning';
+                }
+            }
+
+            async stopScanning() {
+                if (this.isScanning) {
+                    try {
+                        await this.scanner.stop();
+                        this.isScanning = false;
+                        
+                        document.getElementById('startBtn').classList.remove('hidden');
+                        document.getElementById('stopBtn').classList.add('hidden');
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('startBtn').innerHTML = '<span>📷</span> Start Scanning';
+                    } catch (err) {
+                        console.error('Error stopping scanner:', err);
+                    }
+                }
+            }
+
+            onScanSuccess(decodedText) {
+                console.log('Processing scanned code:', decodedText);
+                
+                // Prevent multiple scans of the same code in quick succession
+                if (this.lastScannedCode === decodedText && 
+                    Date.now() - this.lastScanTime < 2000) {
+                    return;
+                }
+                
+                this.lastScannedCode = decodedText;
+                this.lastScanTime = Date.now();
+                
+                // Stop scanning first
+                this.stopScanning().then(() => {
+                    // Then search for prices
+                    this.searchPrices(decodedText);
+                    document.getElementById('manualInput').value = decodedText;
+                    
+                    // Haptic feedback if available
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+                });
+            }
+
+            manualSearch() {
+                const input = document.getElementById('manualInput').value.trim();
+                if (input) {
+                    this.searchPrices(input);
+                } else {
+                    this.showMessage('Please enter a product name or scan a QR code', 'error');
+                }
+            }
+
+            searchPrices(query) {
+                const resultsDiv = document.getElementById('results');
+                const marketplacesDiv = document.getElementById('marketplaces');
+                
+                resultsDiv.classList.remove('hidden');
+                marketplacesDiv.innerHTML = '';
+                
+                // Clean up the query for better search results
+                const cleanQuery = this.cleanSearchQuery(query);
+                
+                this.marketplaces.forEach((marketplace, index) => {
+                    setTimeout(() => {
+                        const marketplaceEl = document.createElement('div');
+                        marketplaceEl.className = 'marketplace';
+                        marketplaceEl.innerHTML = `
+                            <h3>
+                                ${marketplace.name}
+                                <span class="status-badge pending">Click to search</span>
+                            </h3>
+                            <p>${marketplace.description}</p>
+                        `;
+                        
+                        marketplaceEl.addEventListener('click', () => {
+                            window.open(marketplace.url + encodeURIComponent(cleanQuery), '_blank');
+                            marketplaceEl.querySelector('.status-badge').textContent = 'Opened';
+                            marketplaceEl.querySelector('.status-badge').className = 'status-badge';
+                        });
+                        
+                        marketplacesDiv.appendChild(marketplaceEl);
+                    }, index * 100); // Staggered animation
+                });
+                
+                this.showMessage(`Searching for: "${cleanQuery}"`, 'success');
+            }
+
+            cleanSearchQuery(query) {
+                // Remove common QR code prefixes and clean up the query
+                let cleaned = query
+                    .replace(/^https?:\/\//, '')
+                    .replace(/^www\./, '')
+                    .replace(/[<>]/g, '')
+                    .trim();
+                
+                // If it looks like a URL, try to extract product info
+                if (cleaned.includes('/')) {
+                    const parts = cleaned.split('/');
+                    cleaned = parts[parts.length - 1] || cleaned;
+                }
+                
+                // Decode URL encoding
+                try {
+                    cleaned = decodeURIComponent(cleaned);
+                } catch (e) {
+                    // If decode fails, use original
+                }
+                
+                return cleaned;
+            }
+
+            showMessage(message, type) {
+                // Remove any existing messages
+                const existingMessages = document.querySelectorAll('.error-message, .success-message');
+                existingMessages.forEach(msg => msg.remove());
+                
+                const messageEl = document.createElement('div');
+                messageEl.className = type === 'error' ? 'error-message' : 'success-message';
+                messageEl.textContent = message;
+                
+                document.querySelector('.manual-input').appendChild(messageEl);
+                
+                setTimeout(() => {
+                    messageEl.remove();
+                }, 5000);
+            }
+        }
+
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new PriceScanner();
+        });
+
+        // Handle permissions
+        if ('permissions' in navigator) {
+            navigator.permissions.query({ name: 'camera' }).then(result => {
+                if (result.state === 'denied') {
+                    console.warn('Camera permission denied');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
